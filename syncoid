@@ -1780,6 +1780,8 @@ sub getsendsize {
 		$sendsize =~ s/^size\t*//;
 	}
 	chomp $sendsize;
+	
+	$sendsize = converttobytes($sendsize); # Convert all forms (1234234, 25.5M, 1T) to bytes. 
 
 	# check for valid value
 	if ($sendsize !~ /^\d+$/) {
@@ -1796,6 +1798,37 @@ sub getsendsize {
 	}
 	return $sendsize;
 }
+
+
+sub converttobytes {
+
+        my ($size) = @_;
+
+        if ( $size =~ /(\d+\.?\d?)(K|M|G|T|P)/ ) { # If size is human readable, convert to bytes.
+
+		$size = $1;
+		my $unit = $2;
+
+		return int( $size * 1024**1 ) if ( $unit eq 'K' );
+		return int( $size * 1024**2 ) if ( $unit eq 'M' );
+		return int( $size * 1024**3 ) if ( $unit eq 'G' );
+		return int( $size * 1024**4 ) if ( $unit eq 'T' );
+		return int( $size * 1024**5 ) if ( $unit eq 'P' );
+
+
+	} elsif ( $size =~ /^\d+$/ ) { # Check if size was already in bytes.
+
+		return $size;
+
+	} else { # Handle null returns
+
+		return 0; #cannot determine, return 0 as catch-all.
+
+	}
+
+
+}
+
 
 sub getdate {
 	my @time = localtime(time);
