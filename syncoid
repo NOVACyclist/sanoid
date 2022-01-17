@@ -1227,17 +1227,17 @@ sub getzfsvalue {
 }
 
 sub readablebytes {
-	my $bytes = shift;
-	my $disp;
 
-	if ($bytes > 1024*1024*1024) {
-		$disp = sprintf("%.1f",$bytes/1024/1024/1024) . ' GB';
-	} elsif ($bytes > 1024*1024) {
-		$disp = sprintf("%.1f",$bytes/1024/1024) . ' MB';
-	} else {
-		$disp = sprintf("%d",$bytes/1024) . ' KB';
-	}
-	return $disp;
+        my $bytes = shift;
+
+        my @units = qw(B KB MB GB TB PB EB);
+
+        foreach my $power ( 0 .. 6) {
+
+                return sprintf( "%.1f %s", $bytes/1024**$power, $units[$power]) if ( $bytes / 1024**$power < 1000 );
+
+        }
+
 }
 
 sub getoldestsnapshot {
