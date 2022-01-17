@@ -1760,7 +1760,9 @@ sub getsendsize {
 	} else {
 		$sendoptions = getoptionsline(\@sendoptions, ('D','L','R','c','e','h','p','w'));
 	}
-	my $getsendsizecmd = "$sourcessh $mysudocmd $zfscmd send $sendoptions -nvP $snaps";
+	# my $getsendsizecmd = "$sourcessh $mysudocmd $zfscmd send $sendoptions -nvP $snaps";
+        # Solaris 11.2 for one, does not support "P" as an option. Removing. 
+	my $getsendsizecmd = "$sourcessh $mysudocmd $zfscmd send $sendoptions -nv $snaps";  
 	if ($debug) { print "DEBUG: getting estimated transfer size from source $sourcehost using \"$getsendsizecmd 2>&1 |\"...\n"; }
 
 	open FH, "$getsendsizecmd 2>&1 |";
@@ -1771,6 +1773,12 @@ sub getsendsize {
 	# process sendsize: last line of multi-line output is
 	# size of proposed xfer in bytes, but we need to remove
 	# human-readable crap from it
+
+        # Authors again make lazy assumptions. Output returned 
+        # by solaris is human readable but fails these single  
+        # target 'tests'.
+
+
 	my $sendsize = pop(@rawsize);
 	# the output format is different in case of
 	# a resumed receive
@@ -1780,6 +1788,8 @@ sub getsendsize {
 		$sendsize =~ s/^size\t*//;
 	}
 	chomp $sendsize;
+
+        $sendsize = converttobytes($sendsize);
 
 	# check for valid value
 	if ($sendsize !~ /^\d+$/) {
@@ -1795,6 +1805,35 @@ sub getsendsize {
 		$sendsize = 4096;
 	}
 	return $sendsize;
+}
+
+sub converttobytes {
+
+        my ($size) = @_;
+
+        if ( $size =~ /(\d+\.?\d?)(K|M|G|T|P)/ ) {
+
+		$size = $1;
+		my $unit = $2;
+
+		return int( $size * 1024**1 ) if ( $unit eq 'K' );
+		return int( $size * 1024**2 ) if ( $unit eq 'M' );
+		return int( $size * 1024**3 ) if ( $unit eq 'G' );
+		return int( $size * 1024**4 ) if ( $unit eq 'T' );
+		return int( $size * 1024**5 ) if ( $unit eq 'P' );
+
+
+	} elsif ( $size =~ /^\d+$/ ) {
+
+		return $size;
+
+	} else {
+
+		return 0; #cannot determine, return 0 as catch-all.
+
+	}
+
+
 }
 
 sub getdate {
