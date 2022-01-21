@@ -1796,7 +1796,7 @@ sub getsendsize {
 		$sendoptions = getoptionsline(\@sendoptions, ('D','L','R','c','e','h','p','w'));
 	}
 	# my $getsendsizecmd = "$sourcessh $mysudocmd $zfscmd send $sendoptions -nvP $snaps";
-        # Solaris 11.2 for one, does not support "P" as an option. Removing.
+        # Solaris does not support "P" as an option. Removing.
 	my $getsendsizecmd = "$sourcessh $mysudocmd $zfscmd send $sendoptions -nv $snaps";
 	if ($debug) { print "DEBUG: getting estimated transfer size from source $sourcehost using \"$getsendsizecmd 2>&1 |\"...\n"; }
 
@@ -1809,9 +1809,8 @@ sub getsendsize {
 	# size of proposed xfer in bytes, but we need to remove
 	# human-readable crap from it
 
-        # Authors again make lazy assumptions. Output returned
-        # by solaris is human readable but fails these single
-        # target 'tests'.
+        # Output returned by Solaris is human readable but fails
+        # these tests.
 
 
 	my $sendsize = pop(@rawsize);
