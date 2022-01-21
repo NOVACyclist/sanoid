@@ -48,7 +48,7 @@ GetOptions(
 		   "no-stream",
 		   "no-sync-snap",
 		   "no-resume",
-       "no-warnings"
+       "no-warnings",
 		   "exclude=s@",
 		   "skip-parent",
 		   "identifier=s",
@@ -608,7 +608,7 @@ sub syncdataset {
 					$stdout =~ /\Qused in the initial send no longer exists\E/ ||
 					$stdout =~ /incremental source [0-9xa-f]+ no longer exists/
 				) {
-					if ( !$quiet || !$nowarn ) { print "WARN: resetting partially receive state because the snapshot source no longer exists\n"; }
+					if ( !$quiet || $nowarn ) { print "WARN: resetting partially receive state because the snapshot source no longer exists\n"; }
 					resetreceivestate($targethost,$targetfs,$targetisroot);
 					# do an normal sync cycle
 					return syncdataset($sourcehost, $sourcefs, $targethost, $targetfs, $origin);
@@ -1069,7 +1069,7 @@ sub checkcommands {
 	if ($debug) { print "DEBUG: checking availability of $mbuffercmd on source...\n"; }
 	$avail{'sourcembuffer'} = `$sourcessh $checkcmd $mbuffercmd 2>/dev/null`;
 	if ($avail{'sourcembuffer'} eq '') {
-		if ( !$quiet || !$nowarn ) { print "WARN: $mbuffercmd not available on source $s - sync will continue without source buffering.\n"; }
+		if ( ! ( $quiet || $nowarn ) ) { print "WARN: $mbuffercmd not available on source $s - sync will continue without source buffering.\n"; }
 		$avail{'sourcembuffer'} = 0;
 	} else {
 		$avail{'sourcembuffer'} = 1;
@@ -1078,7 +1078,7 @@ sub checkcommands {
 	if ($debug) { print "DEBUG: checking availability of $mbuffercmd on target...\n"; }
 	$avail{'targetmbuffer'} = `$targetssh $checkcmd $mbuffercmd 2>/dev/null`;
 	if ($avail{'targetmbuffer'} eq '') {
-		if ( !$quiet || !$nowarn ) { print "WARN: $mbuffercmd not available on target $t - sync will continue without target buffering.\n"; }
+		if ( ! ( $quiet || $nowarn ) ) { print "WARN: $mbuffercmd not available on target $t - sync will continue without target buffering.\n"; }
 		$avail{'targetmbuffer'} = 0;
 	} else {
 		$avail{'targetmbuffer'} = 1;
@@ -1090,14 +1090,14 @@ sub checkcommands {
 		$avail{'localmbuffer'} = `$checkcmd $mbuffercmd 2>/dev/null`;
 		if ($avail{'localmbuffer'} eq '') {
 			$avail{'localmbuffer'} = 0;
-			if ( !$quiet || !$nowarn ) { print "WARN: $mbuffercmd not available on local machine - sync will continue without local buffering.\n"; }
+			if ( ! ( $quiet || $nowarn ) ) { print "WARN: $mbuffercmd not available on local machine - sync will continue without local buffering.\n"; }
 		}
 	}
 
 	if ($debug) { print "DEBUG: checking availability of $pvcmd on local machine...\n"; }
 	$avail{'localpv'} = `$checkcmd $pvcmd 2>/dev/null`;
 	if ($avail{'localpv'} eq '') {
-		if ( !$quiet || !$nowarn ) { print "WARN: $pvcmd not available on local machine - sync will continue without progress bar.\n"; }
+		if ( ! ($quiet || $nowarn ) ) { print "WARN: $pvcmd not available on local machine - sync will continue without progress bar.\n"; }
 		$avail{'localpv'} = 0;
 	} else {
 		$avail{'localpv'} = 1;
@@ -1632,7 +1632,7 @@ sub getsnapsfallback() {
 	if ($isroot) { $mysudocmd = ''; } else { $mysudocmd = $sudocmd; }
 
 	my $getsnapcmd = "$rhost $mysudocmd $zfscmd get -Hpd 1 type,guid,creation $fsescaped |";
-	warn "snapshot listing failed, trying fallback command";
+	warn "snapshot listing failed, trying fallback command" if ( !$nowarn );
 	if ($debug) { print "DEBUG: FALLBACK, getting list of snapshots on $fs using $getsnapcmd...\n"; }
 	open FH, $getsnapcmd;
 	my @rawsnaps = <FH>;
