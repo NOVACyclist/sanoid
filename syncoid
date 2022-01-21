@@ -29,39 +29,39 @@ my %args = (  'sshkey' => '',
 	   );
 
 GetOptions(
-       \%args,
-       "no-command-checks",
-       "monitor-version",
-		   "compress=s",
-		   "dumpsnaps",
-		   "recursive|r",
-		   "sendoptions=s",
-		   "recvoptions=s",
-       "source-bwlimit=s",
-		   "target-bwlimit=s",
-		   "sshkey=s",
-		   "sshport=i",
-		   "sshcipher|c=s",
-		   "sshoption|o=s@",
-       "debug",
-		   "quiet",
-		   "no-stream",
-		   "no-sync-snap",
-		   "no-resume",
-       "no-warnings",
-		   "exclude=s@",
-		   "skip-parent",
-		   "identifier=s",
-       "no-clone-handling",
-		   "no-privilege-elevation",
-		   "force-delete",
-		   "no-clone-rollback",
-		   "no-rollback",
-       "create-bookmark",
-		   "pv-options=s" => \$pvoptions,
-		   "keep-sync-snap",
-		   "preserve-recordsize",
-       "mbuffer-size=s" => \$mbuffer_size) or pod2usage(2);
+     \%args, "no-command-checks",
+     "monitor-version",
+     "compress=s",
+     "dumpsnaps",
+     "recursive|r",
+     "sendoptions=s",
+     "recvoptions=s",
+     "source-bwlimit=s",
+     "target-bwlimit=s",
+     "sshkey=s",
+     "sshport=i",
+     "sshcipher|c=s",
+     "sshoption|o=s@",
+     "debug",
+     "quiet",
+     "no-stream",
+     "no-sync-snap",
+     "no-resume",
+     "no-warnings",
+     "exclude=s@",
+     "skip-parent",
+     "identifier=s",
+     "no-clone-handling",
+     "no-privilege-elevation",
+     "force-delete",
+     "no-clone-rollback",
+     "no-rollback",
+     "create-bookmark",
+     "pv-options=s" => \$pvoptions,
+     "keep-sync-snap",
+     "preserve-recordsize",
+     "mbuffer-size=s" => \$mbuffer_size
+) or pod2usage(2);
 
 my %compressargs = %{compressargset($args{'compress'} || 'default')}; # Can't be done with GetOptions arg, as default still needs to be set
 
@@ -1262,7 +1262,7 @@ sub getnewestsnapshot {
 	my $snaps = shift;
 	foreach my $snap ( sort { $snaps{'source'}{$b}{'creation'}<=>$snaps{'source'}{$a}{'creation'} } keys %{ $snaps{'source'} }) {
 		# return on first snap found - it's the newest
-		if (!$quiet) { print "NEWEST SNAPSHOT: $snap\n"; }
+		if (!$quiet) { print "NEWEST SNAPSHOT: " . $args{'source'} . "@" . $snap . "\n"; }
 		return $snap;
 	}
 	# must not have had any snapshots on source - looks like we'd better create one!
