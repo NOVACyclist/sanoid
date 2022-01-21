@@ -20,45 +20,48 @@ my $pvoptions = "-p -t -e -r -b";
 
 # Blank defaults to use ssh client's default
 # TODO: Merge into a single "sshflags" option?
-my %args = (  'sshkey' => '', 
-              'sshport' => '', 
-	      'sshcipher' => '', 
-	      'sshoption' => [], 
-	      'target-bwlimit' => '', 
+my %args = (  'sshkey' => '',
+              'sshport' => '',
+	      'sshcipher' => '',
+	      'sshoption' => [],
+	      'target-bwlimit' => '',
 	      'source-bwlimit' => ''
 	   );
-	   
-GetOptions(\%args, "no-command-checks", 
-                   "monitor-version", 
-		   "compress=s", 
-		   "dumpsnaps", 
-		   "recursive|r", 
-		   "sendoptions=s", 
+
+GetOptions(
+       \%args,
+       "no-command-checks",
+       "monitor-version",
+		   "compress=s",
+		   "dumpsnaps",
+		   "recursive|r",
+		   "sendoptions=s",
 		   "recvoptions=s",
-                   "source-bwlimit=s", 
-		   "target-bwlimit=s", 
-		   "sshkey=s", 
-		   "sshport=i", 
-		   "sshcipher|c=s", 
+       "source-bwlimit=s",
+		   "target-bwlimit=s",
+		   "sshkey=s",
+		   "sshport=i",
+		   "sshcipher|c=s",
 		   "sshoption|o=s@",
-                   "debug", 
-		   "quiet", 
-		   "no-stream", 
-		   "no-sync-snap", 
-		   "no-resume", 
-		   "exclude=s@", 
-		   "skip-parent", 
+       "debug",
+		   "quiet",
+		   "no-stream",
+		   "no-sync-snap",
+		   "no-resume",
+       "no-warnings"
+		   "exclude=s@",
+		   "skip-parent",
 		   "identifier=s",
-                   "no-clone-handling", 
-		   "no-privilege-elevation", 
-		   "force-delete", 
-		   "no-clone-rollback", 
+       "no-clone-handling",
+		   "no-privilege-elevation",
+		   "force-delete",
+		   "no-clone-rollback",
 		   "no-rollback",
-                   "create-bookmark", 
-		   "pv-options=s" => \$pvoptions, 
-		   "keep-sync-snap", 
+       "create-bookmark",
+		   "pv-options=s" => \$pvoptions,
+		   "keep-sync-snap",
 		   "preserve-recordsize",
-                   "mbuffer-size=s" => \$mbuffer_size) or pod2usage(2);
+       "mbuffer-size=s" => \$mbuffer_size) or pod2usage(2);
 
 my %compressargs = %{compressargset($args{'compress'} || 'default')}; # Can't be done with GetOptions arg, as default still needs to be set
 
@@ -116,6 +119,7 @@ my $rawsourcefs = $args{'source'};
 my $rawtargetfs = $args{'target'};
 my $debug = $args{'debug'};
 my $quiet = $args{'quiet'};
+my $nowarn = $args{'no-warnings'};
 my $resume = !$args{'no-resume'};
 
 # for compatibility reasons, older versions used hardcoded command paths
@@ -604,7 +608,7 @@ sub syncdataset {
 					$stdout =~ /\Qused in the initial send no longer exists\E/ ||
 					$stdout =~ /incremental source [0-9xa-f]+ no longer exists/
 				) {
-					if (!$quiet) { print "WARN: resetting partially receive state because the snapshot source no longer exists\n"; }
+					if ( !$quiet || !$nowarn ) { print "WARN: resetting partially receive state because the snapshot source no longer exists\n"; }
 					resetreceivestate($targethost,$targetfs,$targetisroot);
 					# do an normal sync cycle
 					return syncdataset($sourcehost, $sourcefs, $targethost, $targetfs, $origin);
@@ -1038,13 +1042,13 @@ sub checkcommands {
 
 	if ($avail{'sourcecompress'} eq '') {
 		if ($compressargs{'rawcmd'} ne '') {
-			print "WARN: $compressargs{'rawcmd'} not available on source $s- sync will continue without compression.\n";
+			print "WARN: $compressargs{'rawcmd'} not available on source $s- sync will continue without compression.\n" if ( !$nowarn );
 		}
 		$avail{'compress'} = 0;
 	}
 	if ($avail{'targetcompress'} eq '') {
 		if ($compressargs{'rawcmd'} ne '') {
-			print "WARN: $compressargs{'rawcmd'} not available on target $t - sync will continue without compression.\n";
+			print "WARN: $compressargs{'rawcmd'} not available on target $t - sync will continue without compression.\n" if ( !$nowarn );
 		}
 		$avail{'compress'} = 0;
 	}
@@ -1057,7 +1061,7 @@ sub checkcommands {
 	# corner case - if source AND target are BOTH remote, we have to check for local compress too
 	if ($sourcehost ne '' && $targethost ne '' && $avail{'localcompress'} eq '') {
 		if ($compressargs{'rawcmd'} ne '') {
-			print "WARN: $compressargs{'rawcmd'} not available on local machine - sync will continue without compression.\n";
+			print "WARN: $compressargs{'rawcmd'} not available on local machine - sync will continue without compression.\n" if ( !$nowarn );
 		}
 		$avail{'compress'} = 0;
 	}
@@ -1065,7 +1069,7 @@ sub checkcommands {
 	if ($debug) { print "DEBUG: checking availability of $mbuffercmd on source...\n"; }
 	$avail{'sourcembuffer'} = `$sourcessh $checkcmd $mbuffercmd 2>/dev/null`;
 	if ($avail{'sourcembuffer'} eq '') {
-		if (!$quiet) { print "WARN: $mbuffercmd not available on source $s - sync will continue without source buffering.\n"; }
+		if ( !$quiet || !$nowarn ) { print "WARN: $mbuffercmd not available on source $s - sync will continue without source buffering.\n"; }
 		$avail{'sourcembuffer'} = 0;
 	} else {
 		$avail{'sourcembuffer'} = 1;
@@ -1074,7 +1078,7 @@ sub checkcommands {
 	if ($debug) { print "DEBUG: checking availability of $mbuffercmd on target...\n"; }
 	$avail{'targetmbuffer'} = `$targetssh $checkcmd $mbuffercmd 2>/dev/null`;
 	if ($avail{'targetmbuffer'} eq '') {
-		if (!$quiet) { print "WARN: $mbuffercmd not available on target $t - sync will continue without target buffering.\n"; }
+		if ( !$quiet || !$nowarn ) { print "WARN: $mbuffercmd not available on target $t - sync will continue without target buffering.\n"; }
 		$avail{'targetmbuffer'} = 0;
 	} else {
 		$avail{'targetmbuffer'} = 1;
@@ -1086,14 +1090,14 @@ sub checkcommands {
 		$avail{'localmbuffer'} = `$checkcmd $mbuffercmd 2>/dev/null`;
 		if ($avail{'localmbuffer'} eq '') {
 			$avail{'localmbuffer'} = 0;
-			if (!$quiet) { print "WARN: $mbuffercmd not available on local machine - sync will continue without local buffering.\n"; }
+			if ( !$quiet || !$nowarn ) { print "WARN: $mbuffercmd not available on local machine - sync will continue without local buffering.\n"; }
 		}
 	}
 
 	if ($debug) { print "DEBUG: checking availability of $pvcmd on local machine...\n"; }
 	$avail{'localpv'} = `$checkcmd $pvcmd 2>/dev/null`;
 	if ($avail{'localpv'} eq '') {
-		if (!$quiet) { print "WARN: $pvcmd not available on local machine - sync will continue without progress bar.\n"; }
+		if ( !$quiet || !$nowarn ) { print "WARN: $pvcmd not available on local machine - sync will continue without progress bar.\n"; }
 		$avail{'localpv'} = 0;
 	} else {
 		$avail{'localpv'} = 1;
@@ -1141,7 +1145,7 @@ sub checkcommands {
 				push @hosts, 'target';
 			}
 			my $affected = join(" and ", @hosts);
-			print "WARN: ZFS resume feature not available on $affected machine - sync will continue without resume support.\n";
+			print "WARN: ZFS resume feature not available on $affected machine - sync will continue without resume support.\n" if ( !$nowarn ) ;
 		}
 	} else {
 		$avail{'sourceresume'} = 0;
@@ -1792,8 +1796,8 @@ sub getsendsize {
 		$sendoptions = getoptionsline(\@sendoptions, ('D','L','R','c','e','h','p','w'));
 	}
 	# my $getsendsizecmd = "$sourcessh $mysudocmd $zfscmd send $sendoptions -nvP $snaps";
-        # Solaris 11.2 for one, does not support "P" as an option. Removing. 
-	my $getsendsizecmd = "$sourcessh $mysudocmd $zfscmd send $sendoptions -nv $snaps";  
+        # Solaris 11.2 for one, does not support "P" as an option. Removing.
+	my $getsendsizecmd = "$sourcessh $mysudocmd $zfscmd send $sendoptions -nv $snaps";
 	if ($debug) { print "DEBUG: getting estimated transfer size from source $sourcehost using \"$getsendsizecmd 2>&1 |\"...\n"; }
 
 	open FH, "$getsendsizecmd 2>&1 |";
@@ -1805,8 +1809,8 @@ sub getsendsize {
 	# size of proposed xfer in bytes, but we need to remove
 	# human-readable crap from it
 
-        # Authors again make lazy assumptions. Output returned 
-        # by solaris is human readable but fails these single  
+        # Authors again make lazy assumptions. Output returned
+        # by solaris is human readable but fails these single
         # target 'tests'.
 
 
@@ -2052,6 +2056,7 @@ Options:
   --debug               Prints out a lot of additional information during a syncoid run
   --monitor-version     Currently does nothing
   --quiet               Suppresses non-error output
+  --no-warnings         Supresses warning messages
   --dumpsnaps           Dumps a list of snapshots during the run
   --no-command-checks   Do not check command existence before attempting transfer. Not recommended
   --no-resume           Don't use the ZFS resume feature if available
