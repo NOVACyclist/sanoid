@@ -1845,7 +1845,7 @@ sub converttobytes {
 
         my ($size) = @_;
 
-        if ( $size =~ /(\d+\.?\d?)(K|M|G|T|P)/ ) {
+        if ( $size =~ /(\d+\.?\d*)(K|M|G|T|P)/ ) {
 
 		$size = $1;
 		my $unit = $2;
